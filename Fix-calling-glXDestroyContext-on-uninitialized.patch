@@ -1,0 +1,46 @@
+From d822283c5bc0e8a6bc24bff8fab6c78f319b6b50 Mon Sep 17 00:00:00 2001
+From: Owen W. Taylor <otaylor@fishsoup.net>
+Date: Wed, 23 Jun 2010 12:10:24 -0400
+Subject: [PATCH 1/2] Fix calling glXDestroyContext() on uninitialized context
+
+The initialization of the context variable could be bypassed
+when we jumped to the cleanup section, resulting in a crash
+when we tried to close the context.
+
+https://bugzilla.redhat.com/show_bug.cgi?id=533807
+---
+ desktop-effects.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+From 1e96aac70b3290a954fa29196a4dbf93f2c3578a Mon Sep 17 00:00:00 2001
+From: Owen W. Taylor <otaylor@fishsoup.net>
+Date: Wed, 23 Jun 2010 12:14:48 -0400
+Subject: [PATCH 2/2] Explicit set background and border colors for dummy window
+
+When creating the window to use for initializing OpenGL, we
+were not passing in a border pixel. This means CopyFromParent,
+which, if the parent had a different color depth than the
+window we were creating, would cause a BadMatch.
+
+We also set the background pixel explicitly, to more closely
+match what the glxinfo code does and for clarity.
+
+The call to XCreateColormap is fixed to correctly pass in AllocNone
+(numerically 0) instead of False (also numerically 0)
+
+diff --git a/desktop-effects.c b/desktop-effects.c
+index 350ec38..0accf59 100644
+--- a/desktop-effects.c
++++ b/desktop-effects.c
+@@ -967,7 +967,7 @@ has_hardware_gl (void)
+   Display *xdisplay = GDK_SCREEN_XDISPLAY (screen);
+   int xscreen = GDK_SCREEN_XNUMBER (screen);
+   char *renderer;
+-  GLXContext context;
++  GLXContext context = NULL;
+   XVisualInfo *visual;
+   Window window = None;
+   XSetWindowAttributes cwa = { 0 };
+-- 
+1.7.0.1
+

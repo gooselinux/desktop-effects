@@ -1,0 +1,62 @@
+From 38a0488758c13d14e9e4e12bd976f624a54fc370 Mon Sep 17 00:00:00 2001
+From: Hicham HAOUARI <hicham.haouari@gmail.com>
+Date: Tue, 6 Apr 2010 19:41:48 +0200
+Subject: [PATCH] Connect to signals after calling update_sensitive()
+
+The function on_option_toggled() handles both the cube and wobbly settings.
+When we are setting up the widgets, we first change the value of 'cube' and
+then the value of 'wobbly', so if we set 'cube' to true, then on_option_toggled() will be called before the wobbly toggle button is set, so we'll think the user
+has disabled wobbly.
+
+Fix that by connecting to the signals after calling update_sensitive().
+
+https://bugzilla.redhat.com/show_bug.cgi?id=532618
+
+Signed-off-by: Adel Gadllah <adel.gadllah@gmail.com>
+---
+ desktop-effects.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/desktop-effects.c b/desktop-effects.c
+index c5a30b5..350ec38 100644
+--- a/desktop-effects.c
++++ b/desktop-effects.c
+@@ -923,17 +923,6 @@ init_app (App *app,
+     if (!gnome_shell_installed ())
+         gtk_widget_hide (glade_xml_get_widget (xml, "gnome_shell_box"));
+     
+-    g_signal_connect (app->standard, "toggled",
+-		      G_CALLBACK (on_window_manager_toggled), app);
+-    g_signal_connect (app->compiz, "toggled",
+-		      G_CALLBACK (on_window_manager_toggled), app);
+-    g_signal_connect (app->gnome_shell, "toggled",
+-		      G_CALLBACK (on_window_manager_toggled), app);
+-    g_signal_connect (app->wobbly, "toggled",
+-		      G_CALLBACK (on_option_toggled), app);
+-    g_signal_connect (app->cube, "toggled",
+-		      G_CALLBACK (on_option_toggled), app);
+-    
+     /* We assume here that at startup that the GConf settings are accurate
+      * and the user hasn't switched window managers by some other means.
+      */
+@@ -945,6 +934,17 @@ init_app (App *app,
+     set_widgets (app, &(app->current));
+     
+     update_sensitive (app);
++
++    g_signal_connect (app->standard, "toggled",
++		      G_CALLBACK (on_window_manager_toggled), app);
++    g_signal_connect (app->compiz, "toggled",
++		      G_CALLBACK (on_window_manager_toggled), app);
++    g_signal_connect (app->gnome_shell, "toggled",
++		      G_CALLBACK (on_window_manager_toggled), app);
++    g_signal_connect (app->wobbly, "toggled",
++		      G_CALLBACK (on_option_toggled), app);
++    g_signal_connect (app->cube, "toggled",
++		      G_CALLBACK (on_option_toggled), app);
+     
+     return TRUE;
+ }
+-- 
+1.7.0.1
+

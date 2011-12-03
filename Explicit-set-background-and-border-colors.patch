@@ -1,0 +1,43 @@
+From 1e96aac70b3290a954fa29196a4dbf93f2c3578a Mon Sep 17 00:00:00 2001
+From: Owen W. Taylor <otaylor@fishsoup.net>
+Date: Wed, 23 Jun 2010 12:14:48 -0400
+Subject: [PATCH 2/2] Explicit set background and border colors for dummy window
+
+When creating the window to use for initializing OpenGL, we
+were not passing in a border pixel. This means CopyFromParent,
+which, if the parent had a different color depth than the
+window we were creating, would cause a BadMatch.
+
+We also set the background pixel explicitly, to more closely
+match what the glxinfo code does and for clarity.
+
+The call to XCreateColormap is fixed to correctly pass in AllocNone
+(numerically 0) instead of False (also numerically 0)
+---
+ desktop-effects.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/desktop-effects.c b/desktop-effects.c
+index 0accf59..09c9f3e 100644
+--- a/desktop-effects.c
++++ b/desktop-effects.c
+@@ -994,12 +994,14 @@ has_hardware_gl (void)
+   if (!context)
+       goto out;
+ 
+-  cwa.colormap = XCreateColormap(xdisplay, RootWindow (xdisplay, xscreen), visual->visual, False);
++  cwa.colormap = XCreateColormap(xdisplay, RootWindow (xdisplay, xscreen), visual->visual, AllocNone);
++  cwa.background_pixel = 0;
++  cwa.border_pixel = 0;
+   window = XCreateWindow(xdisplay,
+ 			 RootWindow (xdisplay, xscreen),
+ 			 0, 0, 1, 1, 0,
+ 			 visual->depth, InputOutput, visual->visual,
+-			 CWColormap,
++			 CWColormap | CWBackPixel | CWBorderPixel,
+ 			 &cwa);
+ 
+   if (!glXMakeCurrent(xdisplay, window, context))
+-- 
+1.7.0.1
+
